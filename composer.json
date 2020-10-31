@@ -1,0 +1,40 @@
+{
+  "name": "customergauge/logstash",
+  "description": "APM & Logging for Laravel powered by Logstash",
+  "type": "library",
+  "license": "MIT",
+  "keywords": ["apm","logstash", "laravel", "elasticsearch", "socket", "udp", "tcp"],
+  "authors": [
+    {
+      "name": "Marco Deleu",
+      "email": "deleugyn@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^7.3",
+    "ext-json": "*",
+    "illuminate/contracts": "^8.0 || ^7.1",
+    "illuminate/support": "^8.0 || ^7.1",
+    "monolog/monolog": "^2.1",
+    "illuminate/config": "^8.12 || ^7.28",
+    "illuminate/http": "^8.12 || ^7.28"
+  },
+  "autoload": {
+    "psr-4": {
+      "CustomerGauge\\Logstash\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\CustomerGauge\\Logstash\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "CustomerGauge\\Logstash\\Providers\\ApmServiceProvider",
+        "CustomerGauge\\Logstash\\Providers\\LogServiceProvider"
+      ]
+    }
+  }
+}
