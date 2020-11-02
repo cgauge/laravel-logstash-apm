@@ -36,7 +36,8 @@
   "extra": {
     "laravel": {
       "providers": [
-        "CustomerGauge\\Logstash\\Providers\\ApmServiceProvider"
+        "CustomerGauge\\Logstash\\Providers\\ApmServiceProvider",
+        "CustomerGauge\\Logstash\\Collectors\\RequestCollector"
       ]
     }
   }
