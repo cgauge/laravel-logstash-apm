@@ -2,20 +2,23 @@
 
 namespace CustomerGauge\Logstash\Collectors;
 
-use CustomerGauge\Logstash\Sockets\ApmSocket;
+use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Http\Events\RequestHandled;
+use Illuminate\Support\ServiceProvider;
 
-final class RequestCollector
+final class RequestCollector extends ServiceProvider
 {
-    private ApmSocket $socket;
-
-    public function __construct(ApmSocket $socket)
+    public function boot()
     {
-        $this->socket = $socket;
-    }
+        $config = $this->app->make(Repository::class);
 
-    public function handle(RequestHandled $event): void
-    {
-        $this->socket->handle(['status' => $event->response->getStatusCode()]);
+        $enable = $config->get('logging.apm.enable');
+
+        if ($enable) {
+            $dispatcher = $this->app->make(Dispatcher::class);
+
+            $dispatcher->listen(RequestHandled::class, RequestHandledListener::class);
+        }
     }
 }
