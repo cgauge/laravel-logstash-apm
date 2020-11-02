@@ -11,6 +11,6 @@ phases:
 
   build:
     commands:
-      - docker-compose -f docker-compose.codebuild.yaml up -d app
+      - docker-compose up -d app
 
-      - docker-compose -f docker-compose.codebuild.yaml exec -T app /app/tests/test.sh
+      - docker-compose exec -T app /app/tests/test.sh
