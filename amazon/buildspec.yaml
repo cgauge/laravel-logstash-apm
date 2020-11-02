@@ -1,0 +1,16 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      docker: 19
+
+  pre_build:
+    commands:
+      - echo $DOCKER_HUB_PASSWORD | docker login --username $DOCKER_HUB_USERNAME --password-stdin
+
+  build:
+    commands:
+      - docker-compose -f docker-compose.codebuild.yaml up -d app
+
+      - docker-compose -f docker-compose.codebuild.yaml exec -T app /app/tests/test.sh

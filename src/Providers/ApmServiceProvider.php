@@ -19,9 +19,9 @@ final class ApmServiceProvider extends ServiceProvider
         $this->app->singleton(ApmSocket::class, function () {
             $config = $this->app->make(Repository::class);
 
-            $host = $config->get('logging.logstash.apm.address');
+            $host = $config->get('logging.apm.address');
 
-            $processors = $config->get('logging.logstash.log.processors', []);
+            $processors = $config->get('logging.apm.processors', []);
 
             $socket = new ApmSocket($host);
 

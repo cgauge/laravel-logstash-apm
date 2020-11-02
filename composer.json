@@ -13,11 +13,15 @@
   "require": {
     "php": "^7.3",
     "ext-json": "*",
-    "illuminate/contracts": "^8.0 || ^7.1",
-    "illuminate/support": "^8.0 || ^7.1",
     "monolog/monolog": "^2.1",
+    "illuminate/contracts": "^8.12 || ^7.1",
+    "illuminate/support": "^8.12 || ^7.1",
     "illuminate/config": "^8.12 || ^7.28",
     "illuminate/http": "^8.12 || ^7.28"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^6.3",
+    "guzzlehttp/guzzle": "^7.2"
   },
   "autoload": {
     "psr-4": {
@@ -32,8 +36,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "CustomerGauge\\Logstash\\Providers\\ApmServiceProvider",
-        "CustomerGauge\\Logstash\\Providers\\LogServiceProvider"
+        "CustomerGauge\\Logstash\\Providers\\ApmServiceProvider"
       ]
     }
   }

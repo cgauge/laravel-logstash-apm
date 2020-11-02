@@ -1,0 +1,35 @@
+Description: Laravel Logstash
+
+Resources:
+  LaravelLogstashApmCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: laravel-logstash-apm-phpunit
+      ServiceRole: !ImportValue GeneralPurposeCodeBuildRoleArn
+      Artifacts:
+        Type: no_artifacts
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: DOCKER_BUILDKIT
+            Value: '1'
+          - Name: DOCKER_HUB_USERNAME
+            Value: '{{resolve:ssm:/docker/hub/username:1}}'
+          - Name: DOCKER_HUB_PASSWORD
+            Value: '{{resolve:ssm:/docker/hub/password:1}}'
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
+        PrivilegedMode: true
+      Source:
+        Auth:
+          Type: OAUTH
+        Location: https://github.com/cgauge/laravel-logstash-apm.git
+        Type: GITHUB
+        BuildSpec: amazon/buildspec.yaml
+      Triggers:
+        Webhook: true
+      TimeoutInMinutes: 10
+      Cache:
+        Type: LOCAL
+        Modes:
+          - LOCAL_DOCKER_LAYER_CACHE
