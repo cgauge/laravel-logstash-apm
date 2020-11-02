@@ -70,5 +70,7 @@ final class ApmTest extends TestCase
             $this->assertSame('unauthenticated', $response['hits']['hits'][0]['_source']['user']);
 
         }, 750);
+
+        Str::createUuidsNormally();
     }
 }
