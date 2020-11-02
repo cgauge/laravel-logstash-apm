@@ -11,6 +11,8 @@ phases:
 
   build:
     commands:
-      - docker-compose -f docker-compose.codebuild.yaml up -d app
+      - sysctl -w vm.max_map_count=262144
+        
+      - docker-compose up -d app
 
-      - docker-compose -f docker-compose.codebuild.yaml exec -T app /app/tests/test.sh
+      - docker-compose exec -T app /app/tests/test.sh

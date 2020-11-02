@@ -64,5 +64,7 @@ final class LogTest extends TestCase
             $this->assertSame($uuid->toString(), $response['hits']['hits'][0]['_source']['uuid']);
 
         }, 750);
+
+        Str::createUuidsNormally();
     }
 }
