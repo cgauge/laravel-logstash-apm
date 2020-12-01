@@ -6,11 +6,7 @@ use CustomerGauge\Logstash\Sockets\ApmSocket;
 use Illuminate\Config\Repository;
 use Illuminate\Support\ServiceProvider;
 use Monolog\Formatter\JsonFormatter;
-use Tests\Unit\DurationProcessor;
-use Tests\Unit\HttpProcessor;
-use Tests\Unit\ServiceProcessor;
-use Tests\Unit\Socket;
-use Tests\Unit\UuidProcessor;
+use Monolog\Handler\SocketHandler;
 
 final class ApmServiceProvider extends ServiceProvider
 {
@@ -23,7 +19,7 @@ final class ApmServiceProvider extends ServiceProvider
 
             $processors = $config->get('logging.apm.processors', []);
 
-            $socket = new ApmSocket($host);
+            $socket = new SocketHandler($host);
 
             $socket->setFormatter(new JsonFormatter);
 
@@ -33,7 +29,7 @@ final class ApmServiceProvider extends ServiceProvider
                 $socket->pushProcessor($this->app->make($processor));
             }
 
-            return $socket;
+            return new ApmSocket($socket);
         });
     }
 }
