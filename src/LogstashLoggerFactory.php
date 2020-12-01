@@ -2,8 +2,11 @@
 
 namespace CustomerGauge\Logstash;
 
+use Aws\Sqs\SqsClient;
 use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\SocketHandler;
+use Monolog\Handler\SqsHandler;
+use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -19,27 +22,68 @@ final class LogstashLoggerFactory
 
     public function __invoke(array $config): LoggerInterface
     {
-        $level = $config['level'] ?? Logger::DEBUG;
+        $processors = $this->processors($config['processors'] ?? []);
 
-        $processors = $config['processors'] ?? [];
+        $handlers = $this->handlers($config);
 
-        $socket = $this->socket($config['address'], $level, $processors);
-
-        return new Logger('', [$socket]);
+        return new Logger('', $handlers, $processors);
     }
 
-    private function socket(string $address, /*string|int*/ $level, array $processors): SocketHandler
+    /**
+     * @return callable[]
+     */
+    private function processors(array $processors): array
     {
-        $socket = new SocketHandler($address, $level);
+        $processors = array_reverse($processors);
+
+        $instances = [];
+
+        foreach ($processors as $processor) {
+            $instances[] = $this->container->make($processor);
+        }
+
+        return $instances;
+    }
+
+    private function handlers(array $config): array
+    {
+        $level = $config['level'] ?? Logger::DEBUG;
+
+        $socket = $this->socket($config['address'], $level);
+
+        $sqs = $this->sqs($config, $level);
+
+        $stderr = new StreamHandler('php://stderr', $level);
+
+        return array_filter([$socket, $sqs, $stderr]);
+    }
+
+    private function socket(string $address, /*string|int*/ $level): GracefulHandlerAdapter
+    {
+        $socket = new SocketHandler($address, $level, false);
 
         $socket->setFormatter(new JsonFormatter);
 
-        $processors = array_reverse($processors);
+        return new GracefulHandlerAdapter($socket);
+    }
 
-        foreach ($processors as $processor) {
-            $socket->pushProcessor($this->container->make($processor));
+    private function sqs(array $config, /*string|int*/ $level): ?GracefulHandlerAdapter
+    {
+        if (! isset($config['fallback']['queue'])) {
+            return null;
         }
 
-        return $socket;
+        $queue = $config['fallback']['queue'];
+
+        $region = $config['fallback']['region'];
+
+        $client = new SqsClient([
+            'region' => $region,
+            'version' => '2012-11-05'
+        ]);
+
+        $handler = new SqsHandler($client, $queue, $level);
+
+        return new GracefulHandlerAdapter($handler);
     }
 }

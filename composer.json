@@ -21,7 +21,8 @@
   },
   "require-dev": {
     "orchestra/testbench": "^6.3",
-    "guzzlehttp/guzzle": "^7.2"
+    "guzzlehttp/guzzle": "^7.2",
+    "aws/aws-sdk-php": "^3.164"
   },
   "autoload": {
     "psr-4": {
