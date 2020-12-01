@@ -78,7 +78,7 @@ Resources:
               Value: !Ref ElasticRegion
 
             - Name: LOGSTASH_FALLBACK_QUEUE
-              Value: !Ref LogstashFallbackQueue
+              Value: !GetAtt LogstashFallbackQueue.QueueName
             - Name: LOGSTASH_FALLBACK_QUEUE_REGION
               Value: !Ref "AWS::Region"
       Cpu: 512
