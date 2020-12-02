@@ -1,0 +1,130 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Logstash Deployment on Fargate
+
+Parameters:
+  Vpc:
+    Type: AWS::EC2::VPC::Id
+
+  PrivateSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+
+  Cluster:
+    Type: String
+
+  Image:
+    Type: String
+
+  TaskRole:
+    Type: String
+
+  ElasticHost:
+    Type: String
+
+  ElasticRegion:
+    Type: String
+
+  PrivateServiceDiscoveryNamespace:
+    Type: String
+
+Resources:
+  LogstashService:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster: !Ref Cluster
+      LaunchType: FARGATE
+      DesiredCount: 1
+      TaskDefinition: !Ref LogstashTaskDefinition
+      ServiceRegistries:
+        - RegistryArn: !GetAtt [ServiceDiscovery, Arn]
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          SecurityGroups:
+            - !Ref LogstashSecurityGroup
+          Subnets: !Ref PrivateSubnets
+
+  ServiceDiscovery:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      Name: logstash
+      DnsConfig:
+        DnsRecords:
+          - Type: A
+            TTL: 60
+        NamespaceId: !Ref PrivateServiceDiscoveryNamespace
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+
+  LogstashTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Essential: true
+          Image: !Ref Image
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogstashLog
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: task
+          Name: logstash
+          PortMappings:
+            - ContainerPort: 9601
+            - ContainerPort: 9602
+          Privileged: 'false'
+          Environment:
+            - Name: ELASTICSEARCH_HOST
+              Value: !Ref ElasticHost
+            - Name: ELASTICSEARCH_REGION
+              Value: !Ref ElasticRegion
+
+            - Name: LOGSTASH_FALLBACK_QUEUE
+              Value: !GetAtt LogstashFallbackQueue.QueueName
+            - Name: LOGSTASH_FALLBACK_QUEUE_REGION
+              Value: !Ref "AWS::Region"
+      Cpu: 512
+      Memory: 1024
+      Family: logstash
+      NetworkMode: awsvpc
+      ExecutionRoleArn: !Ref TaskRole
+      TaskRoleArn: !Ref TaskRole
+      RequiresCompatibilities: [FARGATE]
+
+  LogstashLog:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+
+  LogstashSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: LogstashSecurityGroup
+      GroupDescription: 'Security Group for Logstash'
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 10.0.0.0/8
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  LogstashFallbackQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 1800
+      MessageRetentionPeriod: 604800
+      ReceiveMessageWaitTimeSeconds: 20
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt [LogstashFallbackDeadLetterQueue, Arn]
+        maxReceiveCount: 5
+
+  LogstashFallbackDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+
+Outputs:
+  LogstashFallbackQueue:
+    Description: AWS SQS for when Logstash is down.
+    Value: !Ref LogstashFallbackQueue
+    Export:
+      Name: LogstashFallbackQueue
