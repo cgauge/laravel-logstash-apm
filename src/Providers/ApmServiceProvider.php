@@ -2,11 +2,11 @@
 
 namespace CustomerGauge\Logstash\Providers;
 
+use CustomerGauge\Logstash\Processors\ApmProcessor;
 use CustomerGauge\Logstash\Sockets\ApmSocket;
 use Illuminate\Config\Repository;
 use Illuminate\Support\ServiceProvider;
 use Monolog\Formatter\JsonFormatter;
-use Monolog\Handler\SocketHandler;
 
 final class ApmServiceProvider extends ServiceProvider
 {
@@ -19,9 +19,11 @@ final class ApmServiceProvider extends ServiceProvider
 
             $processors = $config->get('logging.apm.processors', []);
 
-            $socket = new SocketHandler($host);
+            $socket = new ApmSocket($host, ApmProcessor::METRIC_LEVEL);
 
             $socket->setFormatter(new JsonFormatter);
+
+            $processors[] = ApmProcessor::class;
 
             $processors = array_reverse($processors);
 
@@ -29,7 +31,7 @@ final class ApmServiceProvider extends ServiceProvider
                 $socket->pushProcessor($this->app->make($processor));
             }
 
-            return new ApmSocket($socket);
+            return $socket;
         });
     }
 }

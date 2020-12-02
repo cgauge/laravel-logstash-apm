@@ -3,14 +3,16 @@
 namespace CustomerGauge\Logstash;
 
 use Exception;
+use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Handler\HandlerInterface;
+use Monolog\Handler\ProcessableHandlerInterface;
 use Throwable;
 
-final class GracefulHandlerAdapter implements HandlerInterface
+final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandlerInterface
 {
-    private HandlerInterface $handler;
+    private AbstractProcessingHandler $handler;
 
-    public function __construct(HandlerInterface $handler)
+    public function __construct(AbstractProcessingHandler $handler)
     {
         $this->handler = $handler;
     }
@@ -45,4 +47,15 @@ final class GracefulHandlerAdapter implements HandlerInterface
         $this->handler->close();
     }
 
+    public function pushProcessor(callable $callback): HandlerInterface
+    {
+        $this->handler->pushProcessor($callback);
+
+        return $this;
+    }
+
+    public function popProcessor(): callable
+    {
+        return $this->handler->popProcessor();
+    }
 }

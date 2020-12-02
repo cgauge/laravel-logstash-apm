@@ -45,7 +45,7 @@ final class LogstashLoggerFactory
         // If Logstash fails, we'll try to get the exact same set of data
         // into SQS. If both of them fails, we'll let Monolog write the
         // original dataset into Stderr.
-        $this->processors([$socket, $sqs], $config['processors'] ?? []);
+        $handlers = $this->processors([$socket, $sqs], $config['processors'] ?? []);
 
         $stderr = new StreamHandler('php://stderr', $level);
 
@@ -55,7 +55,9 @@ final class LogstashLoggerFactory
 
         $stderr->setFormatter($formatter);
 
-        return array_values(array_filter([$socket, $sqs, $stderr]));
+        $handlers[] = $stderr;
+
+        return array_values(array_filter($handlers));
     }
 
     /**
@@ -92,7 +94,7 @@ final class LogstashLoggerFactory
     /**
      * @return  GracefulHandlerAdapter | NoopProcessableHandler
      */
-    private function sqs(array $config, /*string|int*/ $level) /*: GracefulHandlerAdapter | NoopProcessableHandler*/
+    private function sqs(array $config, /*string|int*/ $level) /*: SqsHandler | NoopProcessableHandler*/
     {
         if (! isset($config['fallback']['queue'])) {
             return new NoopProcessableHandler;
