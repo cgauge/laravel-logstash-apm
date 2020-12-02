@@ -47,15 +47,7 @@ final class LogstashLoggerFactory
         // original dataset into Stderr.
         $handlers = $this->processors([$socket, $sqs], $config['processors'] ?? []);
 
-        $stderr = new StreamHandler('php://stderr', $level);
-
-        $formatter = new LineFormatter;
-
-        $formatter->includeStacktraces();
-
-        $stderr->setFormatter($formatter);
-
-        $handlers[] = $stderr;
+        $handlers[] = $this->stderr($level);
 
         return array_values(array_filter($handlers));
     }
@@ -111,6 +103,21 @@ final class LogstashLoggerFactory
 
         $handler = new SqsHandler($client, $queue, $level);
 
+        $handler->setFormatter(new JsonFormatter);
+
         return new GracefulHandlerAdapter($handler);
+    }
+
+    private function stderr(int $level): StreamHandler
+    {
+        $stderr = new StreamHandler('php://stderr', $level);
+
+        $formatter = new JsonFormatter;
+
+        $formatter->includeStacktraces();
+
+        $stderr->setFormatter($formatter);
+
+        return $stderr;
     }
 }
