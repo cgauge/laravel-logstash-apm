@@ -82,7 +82,7 @@ Resources:
             - Name: LOGSTASH_FALLBACK_QUEUE_REGION
               Value: !Ref "AWS::Region"
       Cpu: 512
-      Memory: 1024
+      Memory: 2048
       Family: logstash
       NetworkMode: awsvpc
       ExecutionRoleArn: !Ref TaskRole
