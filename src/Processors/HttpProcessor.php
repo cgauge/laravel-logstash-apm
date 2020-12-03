@@ -18,7 +18,7 @@ final class HttpProcessor implements ProcessorInterface
     {
         $request = [
             'type' => 'http',
-            'user' => optional($this->request->user())->getAuthIdentifier() ?? 'unauthenticated',
+            'user' => optional($this->request->user())->getAuthIdentifier() ?? -1,
             'action' => $this->request->path(),
         ];
 
