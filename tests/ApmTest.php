@@ -67,7 +67,7 @@ final class ApmTest extends TestCase
 
             $this->assertSame('my-request', $response['hits']['hits'][0]['_source']['action']);
 
-            $this->assertSame('unauthenticated', $response['hits']['hits'][0]['_source']['user']);
+            $this->assertSame(-1, $response['hits']['hits'][0]['_source']['user']);
 
         }, 750);
 
