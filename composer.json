@@ -20,9 +20,13 @@
     "illuminate/http": "^8.12 || ^7.28"
   },
   "require-dev": {
+    "bref/bref": "^0.5.29 || ^1.0",
     "orchestra/testbench": "^6.3",
     "guzzlehttp/guzzle": "^7.2",
     "aws/aws-sdk-php": "^3.164"
+  },
+  "suggest": {
+    "bref/bref": "Required when using LambdaProcessor"
   },
   "autoload": {
     "psr-4": {

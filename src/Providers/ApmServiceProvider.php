@@ -12,7 +12,7 @@ final class ApmServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        $this->app->singleton(ApmSocket::class, function () {
+        $this->app->bind(ApmSocket::class, function () {
             $config = $this->app->make(Repository::class);
 
             $host = $config->get('logging.apm.address');
