@@ -128,3 +128,9 @@ Outputs:
     Value: !Ref LogstashFallbackQueue
     Export:
       Name: LogstashFallbackQueue
+
+  LogstashFallbackQueueArn:
+    Description: AWS SQS ARN for when Logstash is down.
+    Value: !GetAtt LogstashFallbackQueue.Arn
+    Export:
+      Name: LogstashFallbackQueueArn
