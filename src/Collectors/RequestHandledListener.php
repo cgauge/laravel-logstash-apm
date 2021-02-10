@@ -2,15 +2,14 @@
 
 namespace CustomerGauge\Logstash\Collectors;
 
-use CustomerGauge\Logstash\Sockets\ApmSocket;
+use CustomerGauge\Logstash\Sockets\HttpApmSocket;
 use Illuminate\Foundation\Http\Events\RequestHandled;
-use Illuminate\Support\ServiceProvider;
 
-final class RequestHandledListener extends ServiceProvider
+final class RequestHandledListener
 {
-    private ApmSocket $socket;
+    private HttpApmSocket $socket;
 
-    public function __construct(ApmSocket $socket)
+    public function __construct(HttpApmSocket $socket)
     {
         $this->socket = $socket;
     }

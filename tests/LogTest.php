@@ -19,8 +19,6 @@ final class LogTest extends TestCase
 
         $app->bind(DurationProcessor::class, fn() => new DurationProcessor($now));
 
-        $app['config']->set('logging.default', 'http');
-
         $app['config']->set('logging.channels', [
             'http' => [
                 'driver' => 'custom',
@@ -31,12 +29,34 @@ final class LogTest extends TestCase
                     BacktraceProcessor::class,
                     DurationProcessor::class,
                 ],
+            ],
+
+            'background' => [
+                'driver' => 'custom',
+                'via' => LogstashLoggerFactory::class,
+                'address' => 'tcp://logstash:9601',
+                'processors' => [
+                    UuidProcessor::class,
+                    BacktraceProcessor::class,
+                ],
             ]
         ]);
     }
 
-    public function test_logstash_log()
+    public function channels()
     {
+        yield ['http'];
+
+        yield ['background'];
+    }
+
+    /**
+     * @dataProvider channels
+     */
+    public function test_logstash_log(string $channel)
+    {
+        $this->app['config']->set('logging.default', $channel);
+
         $uuid = Str::uuid();
 
         Str::createUuidsUsing(fn() => $uuid);
