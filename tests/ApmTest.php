@@ -3,7 +3,7 @@
 namespace Tests\CustomerGauge\Logstash;
 
 use CustomerGauge\Logstash\Collectors\RequestCollector;
-use CustomerGauge\Logstash\Collectors\WorkerCollector;
+use CustomerGauge\Logstash\Collectors\BackgroundCollector;
 use CustomerGauge\Logstash\Processors\DurationProcessor;
 use CustomerGauge\Logstash\Processors\HttpProcessor;
 use CustomerGauge\Logstash\Processors\UuidProcessor;
@@ -21,7 +21,7 @@ final class ApmTest extends TestCase
 {
     protected function getPackageProviders($app)
     {
-        return [ApmServiceProvider::class, RequestCollector::class, WorkerCollector::class];
+        return [ApmServiceProvider::class, RequestCollector::class, BackgroundCollector::class];
     }
 
     protected function getEnvironmentSetUp($app)

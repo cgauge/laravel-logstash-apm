@@ -9,7 +9,7 @@ use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 
-final class WorkerListener
+final class BackgroundListener
 {
     private static array $queue = [];
 
