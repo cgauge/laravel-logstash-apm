@@ -10,7 +10,7 @@ use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\ServiceProvider;
 
-final class BackgroundCollector extends ServiceProvider
+final class QueueCollector extends ServiceProvider
 {
     public function boot()
     {
@@ -21,13 +21,13 @@ final class BackgroundCollector extends ServiceProvider
         if ($enable) {
             $dispatcher = $this->app->make(Dispatcher::class);
 
-            $dispatcher->listen(JobProcessing::class, BackgroundListener::class);
+            $dispatcher->listen(JobProcessing::class, QueueListener::class);
 
-            $dispatcher->listen(JobProcessed::class, BackgroundListener::class);
+            $dispatcher->listen(JobProcessed::class, QueueListener::class);
 
-            $dispatcher->listen(JobFailed::class, BackgroundListener::class);
+            $dispatcher->listen(JobFailed::class, QueueListener::class);
 
-            $dispatcher->listen(JobExceptionOccurred::class, BackgroundListener::class);
+            $dispatcher->listen(JobExceptionOccurred::class, QueueListener::class);
         }
     }
 }

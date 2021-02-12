@@ -3,9 +3,8 @@
 namespace Tests\CustomerGauge\Logstash;
 
 use CustomerGauge\Logstash\LogstashLoggerFactory;
-use CustomerGauge\Logstash\Processors\BacktraceProcessor;
-use CustomerGauge\Logstash\Processors\DurationProcessor;
-use CustomerGauge\Logstash\Processors\UuidProcessor;
+use CustomerGauge\Logstash\Processors\HttpProcessorInterface;
+use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Orchestra\Testbench\TestCase;
@@ -15,47 +14,34 @@ final class LogTest extends TestCase
 {
     protected function getEnvironmentSetUp($app)
     {
-        $now = microtime(true);
+        $app->bind(HttpProcessorInterface::class, MyProcessor::class);
 
-        $app->bind(DurationProcessor::class, fn() => new DurationProcessor($now));
+        $app->bind(QueueProcessorInterface::class, MyProcessor::class);
 
         $app['config']->set('logging.channels', [
-            'http' => [
+            'logstash' => [
                 'driver' => 'custom',
                 'via' => LogstashLoggerFactory::class,
                 'address' => 'tcp://logstash:9601',
-                'processors' => [
-                    UuidProcessor::class,
-                    BacktraceProcessor::class,
-                    DurationProcessor::class,
-                ],
             ],
-
-            'background' => [
-                'driver' => 'custom',
-                'via' => LogstashLoggerFactory::class,
-                'address' => 'tcp://logstash:9601',
-                'processors' => [
-                    UuidProcessor::class,
-                    BacktraceProcessor::class,
-                ],
-            ]
         ]);
+
+        $app['config']->set('logging.default', 'logstash');
     }
 
     public function channels()
     {
         yield ['http'];
 
-        yield ['background'];
+        yield ['queue'];
     }
 
     /**
      * @dataProvider channels
      */
-    public function test_logstash_log(string $channel)
+    public function test_logstash_log(string $processor)
     {
-        $this->app['config']->set('logging.default', $channel);
+        $this->app['config']->set('logging.channels.logstash.processor', $processor);
 
         $uuid = Str::uuid();
 

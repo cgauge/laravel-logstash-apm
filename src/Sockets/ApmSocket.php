@@ -8,6 +8,10 @@ use Throwable;
 
 final class ApmSocket extends SocketHandler
 {
+    public const METRIC_LEVEL = 10;
+
+    public const METRIC_LEVEL_NAME = 'METRIC';
+
     public function isHandling(array $record): bool
     {
         // For Application Performance Monitoring we want to use all the power that

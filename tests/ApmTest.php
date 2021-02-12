@@ -3,10 +3,10 @@
 namespace Tests\CustomerGauge\Logstash;
 
 use CustomerGauge\Logstash\Collectors\RequestCollector;
-use CustomerGauge\Logstash\Collectors\BackgroundCollector;
-use CustomerGauge\Logstash\Processors\DurationProcessor;
-use CustomerGauge\Logstash\Processors\HttpProcessor;
-use CustomerGauge\Logstash\Processors\UuidProcessor;
+use CustomerGauge\Logstash\Collectors\QueueCollector;
+use CustomerGauge\Logstash\DurationCalculator;
+use CustomerGauge\Logstash\Processors\HttpProcessorInterface;
+use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
 use CustomerGauge\Logstash\Providers\ApmServiceProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Queue\Events\JobProcessed;
@@ -21,28 +21,23 @@ final class ApmTest extends TestCase
 {
     protected function getPackageProviders($app)
     {
-        return [ApmServiceProvider::class, RequestCollector::class, BackgroundCollector::class];
+        return [ApmServiceProvider::class, RequestCollector::class, QueueCollector::class];
     }
 
     protected function getEnvironmentSetUp($app)
     {
-        $now = microtime(true);
+        $app->bind(HttpProcessorInterface::class, MyProcessor::class);
 
-        $app->bind(DurationProcessor::class, fn() => new DurationProcessor($now));
+        $app->bind(QueueProcessorInterface::class, MyProcessor::class);
 
         $app['config']->set('logging.apm', [
             'enable' => true,
             'address' => 'udp://logstash:9602',
-            'http' => [
-                UuidProcessor::class,
-                HttpProcessor::class,
-                DurationProcessor::class,
-            ],
-            'background' => [
-                UuidProcessor::class,
-                DurationProcessor::class,
-            ],
         ]);
+
+        $app['config']->set('logging.processor.http', MyProcessor::class);
+
+        $app['config']->set('logging.processor.queue', MyProcessor::class);
     }
 
     public function test_request_apm()
@@ -71,12 +66,6 @@ final class ApmTest extends TestCase
             $this->assertSame(1, $response['hits']['total']['value']);
 
             $this->assertSame($uuid->toString(), $response['hits']['hits'][0]['_source']['uuid']);
-
-            $this->assertSame('http', $response['hits']['hits'][0]['_source']['type']);
-
-            $this->assertSame('my-request', $response['hits']['hits'][0]['_source']['action']);
-
-            $this->assertSame(-1, $response['hits']['hits'][0]['_source']['user']);
 
         }, 750);
 

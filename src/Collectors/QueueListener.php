@@ -2,20 +2,21 @@
 
 namespace CustomerGauge\Logstash\Collectors;
 
-use CustomerGauge\Logstash\Processors\DurationProcessor;
-use CustomerGauge\Logstash\Sockets\BackgroundApmSocket;
+use CustomerGauge\Logstash\DurationCalculator;
+use CustomerGauge\Logstash\Sockets\ApmSocket;
+use CustomerGauge\Logstash\Sockets\QueueApmSocket;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
 
-final class BackgroundListener
+final class QueueListener
 {
     private static array $queue = [];
 
-    private BackgroundApmSocket $socket;
+    private QueueApmSocket $socket;
 
-    public function __construct(BackgroundApmSocket $socket)
+    public function __construct(QueueApmSocket $socket)
     {
         $this->socket = $socket;
     }
@@ -31,13 +32,15 @@ final class BackgroundListener
 
             unset(self::$queue[$event->job->getJobId()]);
 
-            $duration = DurationProcessor::since($start);
+            $duration = DurationCalculator::since($start);
 
             $failed = $event instanceof JobProcessed ? false : true;
 
             $record = [
-                'duration' => $duration,
+                'level' => ApmSocket::METRIC_LEVEL,
+                'level_name' => ApmSocket::METRIC_LEVEL_NAME,
                 'failed' => $failed,
+                'duration' => $duration,
             ];
 
             $this->socket->handle($record);

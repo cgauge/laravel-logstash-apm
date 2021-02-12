@@ -2,7 +2,7 @@
 
 namespace CustomerGauge\Logstash\Sockets;
 
-final class BackgroundApmSocket
+final class QueueApmSocket
 {
     public ApmSocket $socket;
 

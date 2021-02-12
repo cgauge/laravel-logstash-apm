@@ -43,7 +43,7 @@
       "providers": [
         "CustomerGauge\\Logstash\\Providers\\ApmServiceProvider",
         "CustomerGauge\\Logstash\\Collectors\\RequestCollector",
-        "CustomerGauge\\Logstash\\Collectors\\BackgroundCollector"
+        "CustomerGauge\\Logstash\\Collectors\\QueueCollector"
       ]
     }
   }

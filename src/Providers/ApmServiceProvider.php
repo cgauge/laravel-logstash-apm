@@ -2,10 +2,9 @@
 
 namespace CustomerGauge\Logstash\Providers;
 
-use CustomerGauge\Logstash\Processors\ApmProcessor;
 use CustomerGauge\Logstash\Sockets\ApmSocket;
 use CustomerGauge\Logstash\Sockets\HttpApmSocket;
-use CustomerGauge\Logstash\Sockets\BackgroundApmSocket;
+use CustomerGauge\Logstash\Sockets\QueueApmSocket;
 use Illuminate\Config\Repository;
 use Illuminate\Support\ServiceProvider;
 use Monolog\Formatter\JsonFormatter;
@@ -19,7 +18,7 @@ final class ApmServiceProvider extends ServiceProvider
 
             $host = $config->get('logging.apm.address');
 
-            $socket = new ApmSocket($host, ApmProcessor::METRIC_LEVEL);
+            $socket = new ApmSocket($host, ApmSocket::METRIC_LEVEL);
 
             $socket->setFormatter(new JsonFormatter);
 
@@ -29,33 +28,30 @@ final class ApmServiceProvider extends ServiceProvider
         $this->app->bind(HttpApmSocket::class, function () {
             $config = $this->app->make(Repository::class);
 
-            $processors = $config->get('logging.apm.http', []);
+            $processor = $config->get('logging.processor.http');
 
-            $socket = $this->prepareSocketWithProcessors($processors);
+            $socket = $this->prepareSocketWithProcessors($processor);
 
             return new HttpApmSocket($socket);
         });
 
-        $this->app->bind(BackgroundApmSocket::class, function () {
+        $this->app->bind(QueueApmSocket::class, function () {
             $config = $this->app->make(Repository::class);
 
-            $processors = $config->get('logging.apm.background', []);
+            $processor = $config->get('logging.processor.queue');
 
-            $socket = $this->prepareSocketWithProcessors($processors);
+            $socket = $this->prepareSocketWithProcessors($processor);
 
-            return new BackgroundApmSocket($socket);
+            return new QueueApmSocket($socket);
         });
     }
 
-    private function prepareSocketWithProcessors(array $processors): ApmSocket
+    private function prepareSocketWithProcessors(?string $processor): ApmSocket
     {
+        /** @var ApmSocket $socket */
         $socket = clone $this->app->make(ApmSocket::class);
 
-        $processors[] = ApmProcessor::class;
-
-        $processors = array_reverse($processors);
-
-        foreach ($processors as $processor) {
+        if ($processor) {
             $socket->pushProcessor($this->app->make($processor));
         }
 
