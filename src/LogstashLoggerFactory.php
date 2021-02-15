@@ -4,8 +4,10 @@ namespace CustomerGauge\Logstash;
 
 use Aws\Sqs\SqsClient;
 use CustomerGauge\Logstash\Handlers\NoopProcessableHandler;
+use CustomerGauge\Logstash\Processors\BacktraceProcessor;
+use CustomerGauge\Logstash\Processors\HttpProcessorInterface;
+use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
 use Monolog\Formatter\JsonFormatter;
-use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\ProcessableHandlerInterface;
 use Monolog\Handler\SocketHandler;
 use Monolog\Handler\SqsHandler;
@@ -45,7 +47,7 @@ final class LogstashLoggerFactory
         // If Logstash fails, we'll try to get the exact same set of data
         // into SQS. If both of them fails, we'll let Monolog write the
         // original dataset into Stderr.
-        $handlers = $this->processors([$socket, $sqs], $config['processors'] ?? []);
+        $handlers = $this->processor([$socket, $sqs], $config['processor'] ?? null);
 
         $handlers[] = $this->stderr($level);
 
@@ -57,16 +59,22 @@ final class LogstashLoggerFactory
      *
      * @return callable[]
      */
-    private function processors(array $handlers, array $processors): array
+    private function processor(array $handlers, ?string $processor): array
     {
-        $processors = array_reverse($processors);
+        $backtrace = $this->container->get(BacktraceProcessor::class);
 
-        foreach ($processors as $processor) {
-            $process = $this->container->make($processor);
+        if ($processor === 'http') {
+            $processor = $this->container->make(HttpProcessorInterface::class);
+        } elseif ($processor === 'queue') {
+            $processor = $this->container->make(QueueProcessorInterface::class);
+        }
 
-            foreach ($handlers as $handler) {
-                $handler->pushProcessor($process);
+        foreach ($handlers as $handler) {
+            if ($processor) {
+                $handler->pushProcessor($processor);
             }
+
+            $handler->pushProcessor($backtrace);
         }
 
         return $handlers;

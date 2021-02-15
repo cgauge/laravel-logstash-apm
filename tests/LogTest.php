@@ -3,9 +3,8 @@
 namespace Tests\CustomerGauge\Logstash;
 
 use CustomerGauge\Logstash\LogstashLoggerFactory;
-use CustomerGauge\Logstash\Processors\BacktraceProcessor;
-use CustomerGauge\Logstash\Processors\DurationProcessor;
-use CustomerGauge\Logstash\Processors\UuidProcessor;
+use CustomerGauge\Logstash\Processors\HttpProcessorInterface;
+use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Orchestra\Testbench\TestCase;
@@ -15,28 +14,35 @@ final class LogTest extends TestCase
 {
     protected function getEnvironmentSetUp($app)
     {
-        $now = microtime(true);
+        $app->bind(HttpProcessorInterface::class, MyProcessor::class);
 
-        $app->bind(DurationProcessor::class, fn() => new DurationProcessor($now));
-
-        $app['config']->set('logging.default', 'http');
+        $app->bind(QueueProcessorInterface::class, MyProcessor::class);
 
         $app['config']->set('logging.channels', [
-            'http' => [
+            'logstash' => [
                 'driver' => 'custom',
                 'via' => LogstashLoggerFactory::class,
                 'address' => 'tcp://logstash:9601',
-                'processors' => [
-                    UuidProcessor::class,
-                    BacktraceProcessor::class,
-                    DurationProcessor::class,
-                ],
-            ]
+            ],
         ]);
+
+        $app['config']->set('logging.default', 'logstash');
     }
 
-    public function test_logstash_log()
+    public function channels()
     {
+        yield ['http'];
+
+        yield ['queue'];
+    }
+
+    /**
+     * @dataProvider channels
+     */
+    public function test_logstash_log(string $processor)
+    {
+        $this->app['config']->set('logging.channels.logstash.processor', $processor);
+
         $uuid = Str::uuid();
 
         Str::createUuidsUsing(fn() => $uuid);
