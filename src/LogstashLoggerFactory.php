@@ -5,6 +5,7 @@ namespace CustomerGauge\Logstash;
 use Aws\Sqs\SqsClient;
 use CustomerGauge\Logstash\Handlers\NoopProcessableHandler;
 use CustomerGauge\Logstash\Processors\BacktraceProcessor;
+use CustomerGauge\Logstash\Processors\ConsoleProcessorInterface;
 use CustomerGauge\Logstash\Processors\HttpProcessorInterface;
 use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
 use Monolog\Formatter\JsonFormatter;
@@ -67,6 +68,8 @@ final class LogstashLoggerFactory
             $processor = $this->container->make(HttpProcessorInterface::class);
         } elseif ($processor === 'queue') {
             $processor = $this->container->make(QueueProcessorInterface::class);
+        } elseif ($processor === 'console') {
+            $processor = $this->container->make(ConsoleProcessorInterface::class);
         }
 
         foreach ($handlers as $handler) {
