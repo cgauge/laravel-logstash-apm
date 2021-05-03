@@ -3,6 +3,7 @@
 namespace CustomerGauge\Logstash\Providers;
 
 use CustomerGauge\Logstash\Sockets\ApmSocket;
+use CustomerGauge\Logstash\Sockets\ConsoleApmSocket;
 use CustomerGauge\Logstash\Sockets\HttpApmSocket;
 use CustomerGauge\Logstash\Sockets\QueueApmSocket;
 use Illuminate\Config\Repository;
@@ -43,6 +44,16 @@ final class ApmServiceProvider extends ServiceProvider
             $socket = $this->prepareSocketWithProcessors($processor);
 
             return new QueueApmSocket($socket);
+        });
+
+        $this->app->bind(ConsoleApmSocket::class, function () {
+            $config = $this->app->make(Repository::class);
+
+            $processor = $config->get('logging.processor.console');
+
+            $socket = $this->prepareSocketWithProcessors($processor);
+
+            return new ConsoleApmSocket($socket);
         });
     }
 
