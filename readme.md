@@ -56,11 +56,3 @@ or the `\CustomerGauge\Logstash\Processors\QueueProcessorInterface`.
 They offer the chance to modify the `$record` that will be
 streamed to Logstash by using the `ProcessorInterface` system
 provided by Monolog.
-
-```php
-
-    'processor' => [
-        'http' => \App\My\HttpProcessor::class,
-        'queue' => \App\My\QueueProcessor::class,
-    ],
-```

@@ -4,7 +4,7 @@ namespace CustomerGauge\Logstash\Sockets;
 
 final class HttpApmSocket
 {
-    public ApmSocket $socket;
+    public $socket;
 
     public function __construct(ApmSocket $socket)
     {

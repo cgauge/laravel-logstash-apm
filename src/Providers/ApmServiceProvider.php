@@ -2,11 +2,15 @@
 
 namespace CustomerGauge\Logstash\Providers;
 
+use CustomerGauge\Logstash\Processors\ConsoleProcessorInterface;
+use CustomerGauge\Logstash\Processors\HttpProcessorInterface;
+use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
 use CustomerGauge\Logstash\Sockets\ApmSocket;
 use CustomerGauge\Logstash\Sockets\ConsoleApmSocket;
 use CustomerGauge\Logstash\Sockets\HttpApmSocket;
 use CustomerGauge\Logstash\Sockets\QueueApmSocket;
 use Illuminate\Config\Repository;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\ServiceProvider;
 use Monolog\Formatter\JsonFormatter;
 
@@ -26,46 +30,37 @@ final class ApmServiceProvider extends ServiceProvider
             return $socket;
         });
 
-        $this->app->bind(HttpApmSocket::class, function () {
-            $config = $this->app->make(Repository::class);
+        $this->app->bind(HttpApmSocket::class, function (Container $app) {
+            $processor = $app->make(HttpProcessorInterface::class);
 
-            $processor = $config->get('logging.processor.http');
+            /** @var ApmSocket $socket */
+            $socket = clone $app->make(ApmSocket::class);
 
-            $socket = $this->prepareSocketWithProcessors($processor);
+            $socket->pushProcessor($processor);
 
             return new HttpApmSocket($socket);
         });
 
-        $this->app->bind(QueueApmSocket::class, function () {
-            $config = $this->app->make(Repository::class);
+        $this->app->bind(QueueApmSocket::class, function (Container $app) {
+            $processor = $app->make(QueueProcessorInterface::class);
 
-            $processor = $config->get('logging.processor.queue');
+            /** @var ApmSocket $socket */
+            $socket = clone $app->make(ApmSocket::class);
 
-            $socket = $this->prepareSocketWithProcessors($processor);
+            $socket->pushProcessor($processor);
 
             return new QueueApmSocket($socket);
         });
 
-        $this->app->bind(ConsoleApmSocket::class, function () {
-            $config = $this->app->make(Repository::class);
+        $this->app->bind(ConsoleApmSocket::class, function (Container $app) {
+            $processor = $app->make(ConsoleProcessorInterface::class);
 
-            $processor = $config->get('logging.processor.console');
+            /** @var ApmSocket $socket */
+            $socket = clone $app->make(ApmSocket::class);
 
-            $socket = $this->prepareSocketWithProcessors($processor);
+            $socket->pushProcessor($processor);
 
             return new ConsoleApmSocket($socket);
         });
-    }
-
-    private function prepareSocketWithProcessors(?string $processor): ApmSocket
-    {
-        /** @var ApmSocket $socket */
-        $socket = clone $this->app->make(ApmSocket::class);
-
-        if ($processor) {
-            $socket->pushProcessor($this->app->make($processor));
-        }
-
-        return $socket;
     }
 }

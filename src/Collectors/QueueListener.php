@@ -12,9 +12,9 @@ use Illuminate\Queue\Events\JobProcessing;
 
 final class QueueListener
 {
-    private static array $queue = [];
+    private static $queue = [];
 
-    private QueueApmSocket $socket;
+    private $socket;
 
     public function __construct(QueueApmSocket $socket)
     {
@@ -34,7 +34,7 @@ final class QueueListener
 
             $duration = DurationCalculator::since($start);
 
-            $failed = $event instanceof JobProcessed ? false : true;
+            $failed = ! $event instanceof JobProcessed;
 
             $record = [
                 'level' => ApmSocket::METRIC_LEVEL,
