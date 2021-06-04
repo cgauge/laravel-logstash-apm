@@ -19,7 +19,7 @@ use Psr\Log\LoggerInterface;
 
 final class LogstashLoggerFactory
 {
-    private ContainerInterface $container;
+    private $container;
 
     public function __construct(ContainerInterface $container)
     {

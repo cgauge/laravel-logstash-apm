@@ -10,7 +10,7 @@ use Throwable;
 
 final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandlerInterface
 {
-    private AbstractProcessingHandler $handler;
+    private $handler;
 
     public function __construct(AbstractProcessingHandler $handler)
     {

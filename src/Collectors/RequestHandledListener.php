@@ -9,7 +9,7 @@ use Illuminate\Foundation\Http\Events\RequestHandled;
 
 final class RequestHandledListener
 {
-    private HttpApmSocket $socket;
+    private $socket;
 
     public function __construct(HttpApmSocket $socket)
     {
