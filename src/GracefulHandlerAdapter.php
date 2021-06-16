@@ -12,9 +12,12 @@ final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandl
 {
     private $handler;
 
-    public function __construct(AbstractProcessingHandler $handler)
+    private $debugger;
+
+    public function __construct(AbstractProcessingHandler $handler, bool $debugger)
     {
         $this->handler = $handler;
+        $this->debugger = $debugger;
     }
 
     public function isHandling(array $record): bool
@@ -27,6 +30,10 @@ final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandl
         try {
             $this->handler->handle($record);
         } catch (Throwable | Exception $e) {
+            if ($this->debugger === true) {
+                throw $e;
+            }
+
             // Returning false means we're letting the record $bubble up the stack
             // and Monolog will process the same record with the next Handler.
             return false;
@@ -34,7 +41,8 @@ final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandl
 
         // Returning true means we're informing Monolog that we don't want to let
         // the $record bubble up and that this Handler was enough.
-        return true;
+        // If debugger is enabled, we'll always execute all handlers.
+        return ! $this->debugger;
     }
 
     public function handleBatch(array $records): void

@@ -40,7 +40,7 @@ final class LogstashLoggerFactory
     {
         $level = $config['level'] ?? Logger::DEBUG;
 
-        $socket = $this->socket($config['address'], $level);
+        $socket = $this->socket($config['address'], $level, $config['debugger'] ?? false);
 
         $sqs = $this->sqs($config, $level);
 
@@ -83,7 +83,7 @@ final class LogstashLoggerFactory
         return $handlers;
     }
 
-    private function socket(string $address, /*string|int*/ $level): GracefulHandlerAdapter
+    private function socket(string $address, /*string|int*/ $level, bool $debugger): GracefulHandlerAdapter
     {
         $socket = new SocketHandler($address, $level, false);
 
@@ -91,7 +91,7 @@ final class LogstashLoggerFactory
 
         $socket->setFormatter(new JsonFormatter);
 
-        return new GracefulHandlerAdapter($socket);
+        return new GracefulHandlerAdapter($socket, $debugger);
     }
 
     /**
@@ -116,7 +116,7 @@ final class LogstashLoggerFactory
 
         $handler->setFormatter(new JsonFormatter);
 
-        return new GracefulHandlerAdapter($handler);
+        return new GracefulHandlerAdapter($handler, $config['debugger'] ?? false);
     }
 
     private function stderr(int $level): StreamHandler
