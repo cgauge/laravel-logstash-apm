@@ -116,7 +116,7 @@ final class LogstashLoggerFactory
 
         $handler->setFormatter(new JsonFormatter);
 
-        return new GracefulHandlerAdapter($handler);
+        return new GracefulHandlerAdapter($handler, $config['debugger'] ?? false);
     }
 
     private function stderr(int $level): StreamHandler
