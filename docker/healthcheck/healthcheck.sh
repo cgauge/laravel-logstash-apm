@@ -1,9 +1,14 @@
-#!/bin/bash -e
+#!/bin/sh
 
-# Let's give Logstash a 5 minute head start before we start pinging it
-sleep 300
+while ! nc -z localhost 9601; do echo "waiting logstash" && sleep 10; done;
 
-while true; do
-  nc logstash 9601
+set -e
+
+echo "Starting to ping logstash..."
+
+while :
+do
+  nc localhost 9601 -z
+  echo "logstash healthy!"
   sleep 60
 done
