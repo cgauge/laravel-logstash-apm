@@ -14,6 +14,9 @@ Parameters:
   Image:
     Type: String
 
+  HealthCheckImage:
+    Type: String
+
   TaskRole:
     Type: String
 
@@ -81,6 +84,17 @@ Resources:
               Value: !GetAtt LogstashFallbackQueue.QueueName
             - Name: LOGSTASH_FALLBACK_QUEUE_REGION
               Value: !Ref "AWS::Region"
+
+        - Essential: true
+          Image: !Ref HealthCheckImage
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogstashLog
+              awslogs-region: !Ref 'AWS::Region'
+              awslogs-stream-prefix: task
+          Name: healthcheck
+          Privileged: 'false'
       Cpu: 512
       Memory: 2048
       Family: logstash
