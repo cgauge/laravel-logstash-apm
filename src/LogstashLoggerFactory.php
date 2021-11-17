@@ -40,9 +40,11 @@ final class LogstashLoggerFactory
     {
         $level = $config['level'] ?? Logger::DEBUG;
 
-        $socket = $this->socket($config['address'], $level, $config['debugger'] ?? false);
+        $stderr = $this->stderr();
 
-        $sqs = $this->sqs($config, $level);
+        $socket = $this->socket($config['address'], $level, $stderr);
+
+        $sqs = $this->sqs($config, $level, $stderr);
 
         // Let's set the processors in the Socket and in the SQS handlers.
         // If Logstash fails, we'll try to get the exact same set of data
@@ -50,7 +52,7 @@ final class LogstashLoggerFactory
         // original dataset into Stderr.
         $handlers = $this->processor([$socket, $sqs], $config['processor'] ?? null);
 
-        $handlers[] = $this->stderr($level);
+        $handlers[] = $stderr;
 
         return array_values(array_filter($handlers));
     }
@@ -83,7 +85,7 @@ final class LogstashLoggerFactory
         return $handlers;
     }
 
-    private function socket(string $address, /*string|int*/ $level, bool $debugger): GracefulHandlerAdapter
+    private function socket(string $address, /*string|int*/ $level, StreamHandler $stderr): GracefulHandlerAdapter
     {
         $socket = new SocketHandler($address, $level, false);
 
@@ -91,13 +93,13 @@ final class LogstashLoggerFactory
 
         $socket->setFormatter(new JsonFormatter);
 
-        return new GracefulHandlerAdapter($socket, $debugger);
+        return new GracefulHandlerAdapter($socket, $stderr);
     }
 
     /**
      * @return  GracefulHandlerAdapter | NoopProcessableHandler
      */
-    private function sqs(array $config, /*string|int*/ $level) /*: SqsHandler | NoopProcessableHandler*/
+    private function sqs(array $config, /*string|int*/ $level, StreamHandler $stderr) /*: SqsHandler | NoopProcessableHandler*/
     {
         if (! isset($config['fallback']['queue'])) {
             return new NoopProcessableHandler;
@@ -116,12 +118,12 @@ final class LogstashLoggerFactory
 
         $handler->setFormatter(new JsonFormatter);
 
-        return new GracefulHandlerAdapter($handler, $config['debugger'] ?? false);
+        return new GracefulHandlerAdapter($handler, $stderr);
     }
 
-    private function stderr(int $level): StreamHandler
+    private function stderr(): StreamHandler
     {
-        $stderr = new StreamHandler('php://stderr', $level);
+        $stderr = new StreamHandler('php://stderr', Logger::DEBUG);
 
         $formatter = new JsonFormatter;
 

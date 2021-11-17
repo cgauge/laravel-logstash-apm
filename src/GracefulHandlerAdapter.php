@@ -6,18 +6,20 @@ use Exception;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Handler\ProcessableHandlerInterface;
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use Throwable;
 
 final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandlerInterface
 {
     private $handler;
 
-    private $debugger;
+    private $stderr;
 
-    public function __construct(AbstractProcessingHandler $handler, bool $debugger)
+    public function __construct(AbstractProcessingHandler $handler, StreamHandler $stderr)
     {
         $this->handler = $handler;
-        $this->debugger = $debugger;
+        $this->stderr = $stderr;
     }
 
     public function isHandling(array $record): bool
@@ -30,9 +32,12 @@ final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandl
         try {
             $this->handler->handle($record);
         } catch (Throwable | Exception $e) {
-            if ($this->debugger === true) {
-                throw $e;
-            }
+            $message = 'An error occurred while trying to handle a log record. ';
+
+            $this->stderr->handle([
+                'level' => Logger::CRITICAL,
+                'message' => $message . PHP_EOL . json_encode($record) . PHP_EOL . $e->getMessage(),
+            ]);
 
             // Returning false means we're letting the record $bubble up the stack
             // and Monolog will process the same record with the next Handler.
@@ -41,8 +46,7 @@ final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandl
 
         // Returning true means we're informing Monolog that we don't want to let
         // the $record bubble up and that this Handler was enough.
-        // If debugger is enabled, we'll always execute all handlers.
-        return ! $this->debugger;
+        return true;
     }
 
     public function handleBatch(array $records): void
