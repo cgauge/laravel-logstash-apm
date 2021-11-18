@@ -16,22 +16,36 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 final class LogstashLoggerFactory
 {
     private $container;
 
+    private $stderr;
+
     public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
+        $this->stderr = $this->stderr();
     }
 
     public function __invoke(array $config): LoggerInterface
     {
-        // Monolog accepts multiple handlers for logs by providing a stack.
-        // We'll use it as a fallback if the handler fails. The order
-        // will be: Logstash, SQS and Stderr.
-        $handlers = $this->handlers($config);
+        try {
+            // Monolog accepts multiple handlers for logs by providing a stack.
+            // We'll use it as a fallback if the handler fails. The order
+            // will be: Logstash, SQS and Stderr.
+            $handlers = $this->handlers($config);
+
+        } catch (Throwable $t) {
+            // If anything goes wrong while building up the Logger Handlers, let's write it onto
+            // stderr. The idea here is to keep stderr as simple as possible, without any
+            // custom configuration so that it never fails to be written.
+            $this->stderr->handle(['level' => Logger::ERROR, 'message' => $t->getMessage()]);
+
+            return new Logger('emergency', [$this->stderr]);
+        }
 
         return new Logger('', $handlers);
     }
@@ -40,11 +54,9 @@ final class LogstashLoggerFactory
     {
         $level = $config['level'] ?? Logger::DEBUG;
 
-        $stderr = $this->stderr();
+        $socket = $this->socket($config['address'], $level);
 
-        $socket = $this->socket($config['address'], $level, $stderr);
-
-        $sqs = $this->sqs($config, $level, $stderr);
+        $sqs = $this->sqs($config, $level);
 
         // Let's set the processors in the Socket and in the SQS handlers.
         // If Logstash fails, we'll try to get the exact same set of data
@@ -52,7 +64,7 @@ final class LogstashLoggerFactory
         // original dataset into Stderr.
         $handlers = $this->processor([$socket, $sqs], $config['processor'] ?? null);
 
-        $handlers[] = $stderr;
+        $handlers[] = $this->stderr;
 
         return array_values(array_filter($handlers));
     }
@@ -85,7 +97,7 @@ final class LogstashLoggerFactory
         return $handlers;
     }
 
-    private function socket(string $address, /*string|int*/ $level, StreamHandler $stderr): GracefulHandlerAdapter
+    private function socket(string $address, /*string|int*/ $level): GracefulHandlerAdapter
     {
         $socket = new SocketHandler($address, $level, false);
 
@@ -93,13 +105,13 @@ final class LogstashLoggerFactory
 
         $socket->setFormatter(new JsonFormatter);
 
-        return new GracefulHandlerAdapter($socket, $stderr);
+        return new GracefulHandlerAdapter($socket, $this->stderr);
     }
 
     /**
      * @return  GracefulHandlerAdapter | NoopProcessableHandler
      */
-    private function sqs(array $config, /*string|int*/ $level, StreamHandler $stderr) /*: SqsHandler | NoopProcessableHandler*/
+    private function sqs(array $config, /*string|int*/ $level) /*: SqsHandler | NoopProcessableHandler*/
     {
         if (! isset($config['fallback']['queue'])) {
             return new NoopProcessableHandler;
@@ -118,11 +130,14 @@ final class LogstashLoggerFactory
 
         $handler->setFormatter(new JsonFormatter);
 
-        return new GracefulHandlerAdapter($handler, $stderr);
+        return new GracefulHandlerAdapter($handler, $this->stderr);
     }
 
     private function stderr(): StreamHandler
     {
+        // This Handler MUST not process any custom project information because if they fail to be processed
+        // then we don't have any reliable way to write logs anywhere. Think of this as a log channel for
+        // the log library itself. If anything here goes wrong we'll at least have signs of it.
         $stderr = new StreamHandler('php://stderr', Logger::DEBUG);
 
         $formatter = new JsonFormatter;
