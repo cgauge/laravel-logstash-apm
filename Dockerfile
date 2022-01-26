@@ -1,7 +1,9 @@
-FROM alpine:3.14
+FROM alpine:3.15
 
-RUN apk add php7 php7-dom php7-xmlwriter php7-xmlreader php7-tokenizer php7-session php7-xml php7-fileinfo composer \
-            php7-simplexml
+RUN apk add php8 php8-dom php8-xmlwriter php8-xmlreader php8-tokenizer php8-session php8-xml php8-fileinfo composer \
+            php8-simplexml
+
+RUN cp /usr/bin/php8 /usr/bin/php
 
 COPY . /app
 
@@ -11,6 +13,6 @@ COPY ./docker /
 
 WORKDIR /app
 
-RUN composer install
+RUN composer update --with=illuminate/support:^9.0
 
 CMD ["/app/tests/test.sh"]

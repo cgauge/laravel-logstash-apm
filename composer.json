@@ -10,18 +10,20 @@
       "email": "deleugyn@gmail.com"
     }
   ],
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "require": {
     "php": ">=7.3",
     "ext-json": "*",
     "monolog/monolog": "^2.1",
-    "illuminate/contracts": "^8.12 || ^7.1",
-    "illuminate/support": "^8.12 || ^7.1",
-    "illuminate/config": "^8.12 || ^7.28",
-    "illuminate/http": "^8.12 || ^7.28"
+    "illuminate/contracts": "^8.12 || ^7.1 || ^9.0",
+    "illuminate/support": "^8.12 || ^7.1 || ^9.0",
+    "illuminate/config": "^8.12 || ^7.28 || ^9.0",
+    "illuminate/http": "^8.12 || ^7.28 || ^9.0"
   },
   "require-dev": {
     "bref/bref": "^0.5.29 || ^1.0",
-    "orchestra/testbench": "^6.3",
+    "orchestra/testbench": "^7.0",
     "guzzlehttp/guzzle": "^7.2",
     "aws/aws-sdk-php": "^3.164"
   },
