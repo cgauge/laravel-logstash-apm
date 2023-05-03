@@ -18,7 +18,7 @@
     "monolog/monolog": "^2.1",
     "illuminate/contracts": ">=7.1",
     "illuminate/support": ">=7.1",
-    "illuminate/config": "^>=7.1",
+    "illuminate/config": ">=7.1",
     "illuminate/http": ">=7.1"
   },
   "require-dev": {
