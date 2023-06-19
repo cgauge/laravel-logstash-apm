@@ -30,7 +30,11 @@ final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandl
     public function handle(array $record): bool
     {
         try {
-            $this->handler->handle($record);
+            // If we get an error while trying to connect to Logstash, it might be a transient
+            // network issue. Retrying before giving up might mitigate the problem.
+            retry(2, function () use ($record) {
+                $this->handler->handle($record);
+            });
         } catch (Throwable | Exception $e) {
             $message = 'An error occurred while trying to handle a log record. ';
 
