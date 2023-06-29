@@ -15,7 +15,7 @@
   "require": {
     "php": ">=7.3",
     "ext-json": "*",
-    "monolog/monolog": "^2.1",
+    "monolog/monolog": ">=2.1",
     "illuminate/contracts": ">=7.1",
     "illuminate/support": ">=7.1",
     "illuminate/config": ">=7.1",
