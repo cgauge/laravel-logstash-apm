@@ -3,22 +3,21 @@
 namespace CustomerGauge\Logstash\Collectors;
 
 use CustomerGauge\Logstash\DurationCalculator;
+use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
 use CustomerGauge\Logstash\Sockets\ApmSocket;
-use CustomerGauge\Logstash\Sockets\QueueApmSocket;
 use Illuminate\Queue\Events\JobExceptionOccurred;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
+use Monolog\LogRecord;
 
 final class QueueListener
 {
-    private static $queue = [];
+    private static array $queue = [];
 
-    private $socket;
-
-    public function __construct(QueueApmSocket $socket)
+    public function __construct(private ApmSocket $socket, QueueProcessorInterface $processor)
     {
-        $this->socket = $socket;
+        $this->socket->pushProcessor($processor);
     }
 
     public function handle($event): void
@@ -34,14 +33,9 @@ final class QueueListener
 
             $duration = DurationCalculator::since($start);
 
-            $failed = ! $event instanceof JobProcessed;
+            $success = $event instanceof JobProcessed;
 
-            $record = [
-                'level' => ApmSocket::METRIC_LEVEL,
-                'level_name' => ApmSocket::METRIC_LEVEL_NAME,
-                'failed' => $failed,
-                'duration' => $duration,
-            ];
+            $record = MetricRecord::queue($success, $duration);
 
             $this->socket->handle($record);
         }

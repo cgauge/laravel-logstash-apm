@@ -2,6 +2,7 @@ version: '3.7'
 
 services:
   app:
+    stop_grace_period: 0s
     build: .
     command: ["tail", "-f", "/dev/null"]
     depends_on:
@@ -9,6 +10,7 @@ services:
       - logstash
 
   elasticsearch:
+    stop_grace_period: 0s
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.9.3
     environment:
       - node.name=elasticsearch
@@ -22,6 +24,7 @@ services:
         hard: -1
 
   logstash:
+    stop_grace_period: 0s
     image: docker.elastic.co/logstash/logstash-oss:7.9.3
     command: logstash -f /etc/logstash/conf.d/logstash.conf
     volumes: [./docker/logstash.conf:/etc/logstash/conf.d/logstash.conf]

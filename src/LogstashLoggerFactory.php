@@ -3,8 +3,9 @@
 namespace CustomerGauge\Logstash;
 
 use Aws\Sqs\SqsClient;
+use Carbon\CarbonImmutable;
 use CustomerGauge\Logstash\Handlers\NoopProcessableHandler;
-use CustomerGauge\Logstash\Processors\BacktraceProcessor;
+use CustomerGauge\Logstash\Processors\BacktraceFormatter;
 use CustomerGauge\Logstash\Processors\ConsoleProcessorInterface;
 use CustomerGauge\Logstash\Processors\HttpProcessorInterface;
 use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
@@ -13,20 +14,19 @@ use Monolog\Handler\ProcessableHandlerInterface;
 use Monolog\Handler\SocketHandler;
 use Monolog\Handler\SqsHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 final class LogstashLoggerFactory
 {
-    private $container;
+    private readonly StreamHandler $stderr;
 
-    private $stderr;
-
-    public function __construct(ContainerInterface $container)
+    public function __construct(private readonly ContainerInterface $container)
     {
-        $this->container = $container;
         $this->stderr = $this->stderr();
     }
 
@@ -42,7 +42,15 @@ final class LogstashLoggerFactory
             // If anything goes wrong while building up the Logger Handlers, let's write it onto
             // stderr. The idea here is to keep stderr as simple as possible, without any
             // custom configuration so that it never fails to be written.
-            $this->stderr->handle(['level' => Logger::ERROR, 'message' => $t->getMessage()]);
+
+            $record = new LogRecord(
+                CarbonImmutable::now(),
+                'emergency',
+                Level::Emergency,
+                $t->getMessage(),
+            );
+
+            $this->stderr->handle($record);
 
             return new Logger('emergency', [$this->stderr]);
         }
@@ -52,7 +60,7 @@ final class LogstashLoggerFactory
 
     private function handlers(array $config): array
     {
-        $level = $config['level'] ?? Logger::DEBUG;
+        $level = $config['level'] ?? Level::Debug->value;
 
         $socket = $this->socket($config['address'], $level);
 
@@ -76,8 +84,6 @@ final class LogstashLoggerFactory
      */
     private function processor(array $handlers, ?string $processor): array
     {
-        $backtrace = $this->container->get(BacktraceProcessor::class);
-
         if ($processor === 'http') {
             $processor = $this->container->make(HttpProcessorInterface::class);
         } elseif ($processor === 'queue') {
@@ -90,20 +96,18 @@ final class LogstashLoggerFactory
             if ($processor) {
                 $handler->pushProcessor($processor);
             }
-
-            $handler->pushProcessor($backtrace);
         }
 
         return $handlers;
     }
 
-    private function socket(string $address, /*string|int*/ $level): GracefulHandlerAdapter
+    private function socket(string $address, string|int $level): GracefulHandlerAdapter
     {
         $socket = new SocketHandler($address, $level, false);
 
         $socket->setConnectionTimeout(1);
 
-        $socket->setFormatter(new JsonFormatter);
+        $socket->setFormatter(new BacktraceFormatter);
 
         return new GracefulHandlerAdapter($socket, $this->stderr);
     }
@@ -111,7 +115,7 @@ final class LogstashLoggerFactory
     /**
      * @return  GracefulHandlerAdapter | NoopProcessableHandler
      */
-    private function sqs(array $config, /*string|int*/ $level) /*: SqsHandler | NoopProcessableHandler*/
+    private function sqs(array $config, string|int $level) /*: SqsHandler | NoopProcessableHandler*/
     {
         if (! isset($config['fallback']['queue'])) {
             return new NoopProcessableHandler;
@@ -128,7 +132,7 @@ final class LogstashLoggerFactory
 
         $handler = new SqsHandler($client, $queue, $level);
 
-        $handler->setFormatter(new JsonFormatter);
+        $handler->setFormatter(new BacktraceFormatter);
 
         return new GracefulHandlerAdapter($handler, $this->stderr);
     }
@@ -138,7 +142,7 @@ final class LogstashLoggerFactory
         // This Handler MUST not process any custom project information because if they fail to be processed
         // then we don't have any reliable way to write logs anywhere. Think of this as a log channel for
         // the log library itself. If anything here goes wrong we'll at least have signs of it.
-        $stderr = new StreamHandler('php://stderr', Logger::DEBUG);
+        $stderr = new StreamHandler('php://stderr', Level::Debug);
 
         $formatter = new JsonFormatter;
 

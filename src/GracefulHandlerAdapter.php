@@ -7,27 +7,24 @@ use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Handler\HandlerInterface;
 use Monolog\Handler\ProcessableHandlerInterface;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use Throwable;
 
 final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandlerInterface
 {
-    private $handler;
+    public function __construct(
+        private AbstractProcessingHandler $handler,
+        private StreamHandler $stderr,
+    ) {}
 
-    private $stderr;
-
-    public function __construct(AbstractProcessingHandler $handler, StreamHandler $stderr)
-    {
-        $this->handler = $handler;
-        $this->stderr = $stderr;
-    }
-
-    public function isHandling(array $record): bool
+    public function isHandling(LogRecord $record): bool
     {
         return $this->handler->isHandling($record);
     }
 
-    public function handle(array $record): bool
+    public function handle(LogRecord $record): bool
     {
         try {
             // If we get an error while trying to connect to Logstash, it might be a transient
@@ -38,10 +35,12 @@ final class GracefulHandlerAdapter implements HandlerInterface, ProcessableHandl
         } catch (Throwable | Exception $e) {
             $message = 'An error occurred while trying to handle a log record. ';
 
-            $this->stderr->handle([
-                'level' => Logger::CRITICAL,
+            $record = $record->with([
+                'level' => Level::Critical,
                 'message' => $message . PHP_EOL . json_encode($record) . PHP_EOL . $e->getMessage(),
             ]);
+
+            $this->stderr->handle($record);
 
             // Returning false means we're letting the record $bubble up the stack
             // and Monolog will process the same record with the next Handler.

@@ -5,6 +5,7 @@ namespace Tests\CustomerGauge\Logstash;
 use CustomerGauge\Logstash\LogstashLoggerFactory;
 use CustomerGauge\Logstash\Processors\HttpProcessorInterface;
 use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
+use Generator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Orchestra\Testbench\TestCase;
@@ -29,7 +30,7 @@ final class LogTest extends TestCase
         $app['config']->set('logging.default', 'logstash');
     }
 
-    public function channels()
+    public static function channels(): iterable
     {
         yield ['http'];
 
