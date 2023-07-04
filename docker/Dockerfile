@@ -1,19 +1,9 @@
-FROM docker.elastic.co/logstash/logstash-oss:7.9.3 as logstash
+FROM opensearchproject/logstash-oss-with-opensearch-output-plugin:7.13.4 as logstash
 
-FROM alpine:3.15 as patch
+USER logstash
 
-COPY --from=logstash /usr/share/logstash /logstash-patch
-
-RUN apk add zip
-
-RUN zip -q -d /logstash-patch/logstash-core/**/*/log4j-core-2.* org/apache/logging/log4j/core/lookup/JndiLookup.class
-
-FROM logstash
-
-COPY --from=patch /logstash-patch /usr/share/logstash
+COPY --chown=logstash:logstash ./amazon.logstash.conf /usr/share/logstash/config/logstash.conf
 
 RUN /usr/share/logstash/bin/logstash-plugin install logstash-output-amazon_es
 
-COPY ./amazon.logstash.conf /etc/logstash/conf.d/logstash.conf
-
-CMD ["logstash", "-f", "/etc/logstash/conf.d/logstash.conf"]
+CMD ["/usr/share/logstash/bin/logstash", "-f", "/usr/share/logstash/config/logstash.conf"]
