@@ -13,7 +13,9 @@ use Monolog\Handler\ProcessableHandlerInterface;
 use Monolog\Handler\SocketHandler;
 use Monolog\Handler\SqsHandler;
 use Monolog\Handler\StreamHandler;
+use Monolog\Level;
 use Monolog\Logger;
+use Monolog\LogRecord;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -42,7 +44,8 @@ final class LogstashLoggerFactory
             // If anything goes wrong while building up the Logger Handlers, let's write it onto
             // stderr. The idea here is to keep stderr as simple as possible, without any
             // custom configuration so that it never fails to be written.
-            $this->stderr->handle(['level' => Logger::ERROR, 'message' => $t->getMessage()]);
+            $date = new \DateTimeImmutable();
+            $this->stderr->handle(new LogRecord($date, 'app', Level::Error, $t->getMessage()));
 
             return new Logger('emergency', [$this->stderr]);
         }

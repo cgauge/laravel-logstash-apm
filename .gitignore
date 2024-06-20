@@ -3,4 +3,5 @@ composer.phar
 composer.lock
 /vendor/
 .phpunit.result.cache
+.phpunit.cache
 docker-compose.local.yaml

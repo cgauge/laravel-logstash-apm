@@ -5,6 +5,7 @@ namespace CustomerGauge\Logstash\Sockets;
 use Exception;
 use Monolog\Handler\SocketHandler;
 use Throwable;
+use Monolog\LogRecord;
 
 final class ApmSocket extends SocketHandler
 {
@@ -12,7 +13,7 @@ final class ApmSocket extends SocketHandler
 
     public const METRIC_LEVEL_NAME = 'METRIC';
 
-    public function isHandling(array $record): bool
+    public function isHandling(LogRecord $record): bool
     {
         // For Application Performance Monitoring we want to use all the power that
         // Monolog offers with the Socket Handler, while ignoring logging level.
@@ -20,7 +21,7 @@ final class ApmSocket extends SocketHandler
         return true;
     }
 
-    public function handle(array $record): bool
+    public function handle(LogRecord $record): bool
     {
         try {
             return parent::handle($record);

@@ -3,17 +3,25 @@
 namespace CustomerGauge\Logstash\Processors;
 
 use Monolog\Processor\ProcessorInterface;
+use Monolog\LogRecord;
 
 final class BacktraceProcessor implements ProcessorInterface
 {
-    public function __invoke(array $record)
+    public function __invoke(LogRecord $record)
     {
         $exception = $record['context']['exception'] ?? null;
 
-        unset($record['context']['exception'], $record['channel'], $record['context']['userId']);
+        $record['context']['exception'] = null;
+        $record['context']['userId'] = null;
 
-        $backtrace = ['backtrace_php' => optional($exception)->getTraceAsString()];
+        if ($exception) {
+            if (empty($record['extra'])) {
+                $record['extra'] = [];
+            }
+            
+            $record['extra']['backtrace_php'] = $exception->getTraceAsString();
+        }
 
-        return array_filter($record + $backtrace);
+        return $record;
     }
 }

@@ -2,6 +2,8 @@
 
 namespace CustomerGauge\Logstash\Sockets;
 
+use Monolog\LogRecord;
+
 final class ConsoleApmSocket
 {
     public $socket;
@@ -11,7 +13,7 @@ final class ConsoleApmSocket
         $this->socket = $socket;
     }
 
-    public function handle(array $record): bool
+    public function handle(LogRecord $record): bool
     {
         return $this->socket->handle($record);
     }
