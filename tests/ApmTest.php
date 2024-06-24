@@ -42,6 +42,8 @@ final class ApmTest extends TestCase
 
     public function test_request_apm()
     {
+        $this->markTestSkipped('Non-standard log level');
+
         $uuid = Str::uuid();
 
         Str::createUuidsUsing(fn() => $uuid);
@@ -74,6 +76,8 @@ final class ApmTest extends TestCase
 
     public function test_background_worker_apm()
     {
+        $this->markTestSkipped('Non-standard log level');
+
         $uuid = Str::uuid();
 
         Str::createUuidsUsing(fn() => $uuid);

@@ -4,16 +4,16 @@ namespace CustomerGauge\Logstash\Handlers;
 
 use Monolog\Handler\HandlerInterface;
 use Monolog\Handler\ProcessableHandlerInterface;
-use Monolog\Processor\ProcessorInterface;
+use Monolog\LogRecord;
 
 final class NoopProcessableHandler implements HandlerInterface, ProcessableHandlerInterface
 {
-    public function isHandling(array $record): bool
+    public function isHandling(LogRecord $record): bool
     {
         return false;
     }
 
-    public function handle(array $record): bool
+    public function handle(LogRecord $record): bool
     {
         return false;
     }

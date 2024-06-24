@@ -8,6 +8,7 @@ use CustomerGauge\Logstash\Processors\QueueProcessorInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\LoggerInterface;
 
 final class LogTest extends TestCase
@@ -29,18 +30,10 @@ final class LogTest extends TestCase
         $app['config']->set('logging.default', 'logstash');
     }
 
-    public function channels()
+    public function test_logstash_log_http()
     {
-        yield ['http'];
+        $processor = 'http';
 
-        yield ['queue'];
-    }
-
-    /**
-     * @dataProvider channels
-     */
-    public function test_logstash_log(string $processor)
-    {
         $this->app['config']->set('logging.channels.logstash.processor', $processor);
 
         $uuid = Str::uuid();
@@ -50,24 +43,57 @@ final class LogTest extends TestCase
         $log = $this->app->make(LoggerInterface::class);
 
         /** @var LoggerInterface $log */
-        $log->debug('testing logstash');
+        $log->debug('testing logstash http');
 
         retry(10, function () use ($uuid) {
             $response = Http::post('http://elasticsearch:9200/_search', [
                 'query' => [
                     'term' => [
-                        'uuid.keyword' => [
-                            'value' => $uuid->toString(),
-                        ],
+                        'message' => 'http',
                     ],
                 ],
             ])->json();
 
             $this->assertSame(1, $response['hits']['total']['value']);
 
-            $this->assertSame('testing logstash', $response['hits']['hits'][0]['_source']['message']);
+            $this->assertSame('testing logstash http', $response['hits']['hits'][0]['_source']['message']);
 
-            $this->assertSame($uuid->toString(), $response['hits']['hits'][0]['_source']['uuid']);
+            $this->assertSame($uuid->toString(), $response['hits']['hits'][0]['_source']['extra']['uuid']);
+
+        }, 750);
+
+        Str::createUuidsNormally();
+    }
+
+    public function test_logstash_log_queue()
+    {
+        $processor = 'queue';
+
+        $this->app['config']->set('logging.channels.logstash.processor', $processor);
+
+        $uuid = Str::uuid();
+
+        Str::createUuidsUsing(fn() => $uuid);
+
+        $log = $this->app->make(LoggerInterface::class);
+
+        /** @var LoggerInterface $log */
+        $log->debug('testing logstash queue');
+
+        retry(10, function () use ($uuid) {
+            $response = Http::post('http://elasticsearch:9200/_search', [
+                'query' => [
+                    'term' => [
+                        'message' => 'queue',
+                    ],
+                ],
+            ])->json();
+
+            $this->assertSame(1, $response['hits']['total']['value']);
+
+            $this->assertSame('testing logstash queue', $response['hits']['hits'][0]['_source']['message']);
+
+            $this->assertSame($uuid->toString(), $response['hits']['hits'][0]['_source']['extra']['uuid']);
 
         }, 750);
 
